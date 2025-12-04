@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIF下载工具</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- Left Panel -->
+        <div class="sidebar" id="sidebar">
+            <h1>
+                <span>🗺️ TIF下载工具</span>
+                <div class="sidebar-header-toggle" id="sidebar-close" title="收起面板">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8 2.146 2.854Z"/>
+                    </svg>
+                </div>
+            </h1>
+            
+            <!-- Search Box -->
+            <div class="panel">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="输入地名搜索...">
+                    <button id="search-btn">Go</button>
+                </div>
+                <div id="search-results" class="search-results"></div>
+            </div>
+            
+            <!-- Administrative Region -->
+            <div class="panel">
+                <h3>🏛️ 行政区划</h3>
+                <div class="form-grid-3">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select id="province-select">
+                            <option value="">省份</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select id="city-select" disabled>
+                            <option value="">城市</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <select id="district-select" disabled>
+                            <option value="">区县</option>
+                        </select>
+                    </div>
+                </div>
+                <button id="load-boundary-btn" class="btn-secondary" style="margin-top: 8px;">加载边界</button>
+            </div>
+            
+            <!-- Download Settings -->
+            <div class="panel">
+                <h3>⚙️ 下载设置</h3>
+                <div class="form-group">
+                    <label>图源</label>
+                    <select id="source-select">
+                        <option value="osm">OpenStreetMap</option>
+                        <option value="tianditu_satellite">天地图 卫星</option>
+                        <option value="tianditu_vector">天地图 矢量</option>
+                        <option value="arcgis_satellite">ArcGIS 卫星</option>
+                        <option value="carto_light">Carto Light</option>
+                        <option value="carto_dark">Carto Dark</option>
+                        <option value="google_satellite">⚠️ Google 卫星 (需翻墙)</option>
+                        <option value="google_map">⚠️ Google 地图 (需翻墙)</option>
+                        <option value="google_hybrid">⚠️ Google 混合 (需翻墙)</option>
+                    </select>
+                </div>
+                <div class="form-grid-2">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>缩放: <span id="zoom-value">15</span></label>
+                        <input type="range" id="zoom-slider" min="1" max="19" value="15">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>格式</label>
+                        <select id="format-select">
+                            <option value="geotiff">.tif</option>
+                            <option value="png">.png</option>
+                            <option value="jpeg">.jpg</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group checkbox-wrapper" style="margin-top: 8px;">
+                    <input type="checkbox" id="crop-checkbox">
+                    <label for="crop-checkbox" style="margin: 0; cursor: pointer;">按边界裁剪 (透明背景)</label>
+                </div>
+            </div>
+            
+            <!-- Proxy Settings -->
+            <div class="panel">
+                <h3>🌐 代理设置</h3>
+                <div class="form-group checkbox-wrapper" style="margin-bottom: 6px;">
+                    <input type="checkbox" id="proxy-checkbox" checked>
+                    <label for="proxy-checkbox" style="margin: 0; cursor: pointer;">启用代理 (访问国外图源)</label>
+                </div>
+                <input type="text" id="proxy-input" placeholder="http://127.0.0.1:10808" value="http://127.0.0.1:10808">
+            </div>
+            
+            <!-- Selection Info -->
+            <div class="panel">
+                <h3>📐 选择区域</h3>
+                <div id="selection-info">
+                    <p>使用地图工具绘制区域，或选择行政区划</p>
+                </div>
+                <div id="estimate-info" class="estimate-info"></div>
+            </div>
+            
+            <!-- Download Button -->
+            <button id="download-btn" class="btn-primary" disabled>
+                📥 下载地图
+            </button>
+            
+            <!-- Vector Download -->
+            <div class="panel" style="margin-top: 12px;">
+                <h3>📍 矢量数据</h3>
+                <div class="form-group">
+                    <label>OSM 要素类型</label>
+                    <select id="osm-feature-select">
+                        <option value="roads">道路</option>
+                        <option value="buildings">建筑</option>
+                        <option value="waterways">水系</option>
+                        <option value="landuse">土地利用</option>
+                        <option value="pois">兴趣点 (POI)</option>
+                        <option value="railways">铁路</option>
+                        <option value="natural">自然要素</option>
+                    </select>
+                </div>
+                <div class="btn-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+                    <button id="download-osm-btn" class="btn-secondary" disabled>
+                        ⬇ OSM
+                    </button>
+                    <button id="download-admin-btn" class="btn-secondary" disabled>
+                        ⬇ 边界
+                    </button>
+                    <button id="load-vector-btn" class="btn-secondary">
+                        📂 加载
+                    </button>
+                    <button id="clear-vector-btn" class="btn-secondary">
+                        🗑 清除
+                    </button>
+                </div>
+                <p id="vector-status" style="font-size: 11px; color: #666; margin-top: 6px;"></p>
+                <!-- 隐藏的文件输入 -->
+                <input type="file" id="vector-file-input" accept=".geojson,.json,.shp,.zip" style="display: none;" multiple>
+            </div>
+            
+            <!-- Progress -->
+            <div id="progress-container" class="progress-container" style="display: none;">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <p id="progress-text">准备中...</p>
+            </div>
+        </div>
+        
+        <!-- Sidebar Toggle Button (External) -->
+        <div class="sidebar-toggle-btn" id="sidebar-open" title="展开面板">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M2.5 12a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5zm0-4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1H3a.5.5 0 0 1-.5-.5z"/>
+            </svg>
+        </div>
+        
+        <!-- Map Container -->
+        <div id="map"></div>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Draw JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+    <!-- Custom JS -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
