@@ -12,7 +12,7 @@ import json
 from io import BytesIO
 
 from ..models import DownloadRequest, Bounds
-from ..config import TILE_SOURCES, OUTPUT_FORMATS, TILE_SIZE
+from ..config import TILE_SOURCES, OUTPUT_FORMATS, TILE_SIZE, TIANDITU_DEFAULT_TOKEN
 from ..core.tile import (
     get_tiles_in_bounds,
     get_tile_matrix_size,
@@ -28,20 +28,29 @@ router = APIRouter(prefix="/api", tags=["download"])
 
 
 @router.get("/sources")
-async def get_tile_sources():
+async def get_tile_sources(tianditu_token: str = None):
     """Get available tile sources."""
+    # Use custom token if provided, otherwise use default
+    token = tianditu_token if tianditu_token else TIANDITU_DEFAULT_TOKEN
+    
     # Convert config dictionary to simplified format for frontend
-    return {
-        key: {
+    result = {}
+    for key, config in TILE_SOURCES.items():
+        url = config["url"]
+        # Replace token in Tianditu URLs
+        if "tianditu" in key:
+            url = url.replace(TIANDITU_DEFAULT_TOKEN, token)
+        
+        result[key] = {
             "id": key,
             "name": config["name"],
-            "url": config["url"],  # Add URL for frontend preview
-            "subdomains": config.get("subdomains", []), # Add subdomains
+            "url": url,
+            "subdomains": config.get("subdomains", []),
             "max_zoom": config["max_zoom"],
             "attribution": config["attribution"]
         }
-        for key, config in TILE_SOURCES.items()
-    }
+    
+    return result
 
 
 @router.get("/formats")
@@ -143,7 +152,7 @@ async def download_tiles(request: DownloadRequest):
     )
     
     # Download tiles
-    downloader = TileDownloader(source=request.source, proxy=request.proxy)
+    downloader = TileDownloader(source=request.source, proxy=request.proxy, tianditu_token=request.tianditu_token)
     tile_images, progress = await downloader.download_tiles(tiles)
     
     if not tile_images:
@@ -270,7 +279,7 @@ async def _download_task(task_id: str, request: DownloadRequest, bounds: Bounds)
             # Log every tile for debugging
             print(f"[Task {task_id}] Progress: {progress.completed}/{progress.total} ({percent}%)")
         
-        downloader = TileDownloader(source=request.source, proxy=request.proxy)
+        downloader = TileDownloader(source=request.source, proxy=request.proxy, tianditu_token=request.tianditu_token)
         tile_images, progress = await downloader.download_tiles(tiles, progress_callback)
         print(f"[Task {task_id}] Download completed. Got {len(tile_images)} tiles")
         

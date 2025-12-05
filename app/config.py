@@ -101,3 +101,6 @@ NOMINATIM_API = "https://nominatim.openstreetmap.org/search"
 # HTTP 代理设置 (如果需要)
 # 格式: "http://127.0.0.1:7890" 或 None
 HTTP_PROXY = "http://127.0.0.1:10808"  # V2Ray 代理
+
+# 天地图默认 Token
+TIANDITU_DEFAULT_TOKEN = "436ce7e50d27eede2f2929307e6b33c0"

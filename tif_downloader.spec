@@ -67,6 +67,10 @@ hiddenimports = [
     'websockets',
     'watchfiles',
     'python_multipart',
+    'webview',
+    'clr',
+    'clr_loader',
+    'pythonnet',
 ]
 
 # 收集子模块
@@ -83,11 +87,12 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['pkg_resources.py2_warn', 'pkg_resources._vendor.pyparsing'],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
     noarchive=False,
+    module_collection_mode={'pkg_resources': 'py'},
 )
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)

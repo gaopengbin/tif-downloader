@@ -381,37 +381,129 @@ async def convert_shapefile(file: UploadFile = File(...)):
 
 
 def shapefile_to_geojson(shp_path: str) -> dict:
-    """Use pyshp to convert shapefile to GeoJSON"""
+    """Use pyshp to convert shapefile to GeoJSON, with coordinate transformation"""
     import shapefile
+    import os
     
-    sf = shapefile.Reader(shp_path)
+    # 检查是否需要坐标转换
+    prj_path = os.path.splitext(shp_path)[0] + '.prj'
+    transformer = None
+    
+    if os.path.exists(prj_path):
+        try:
+            from pyproj import CRS, Transformer
+            with open(prj_path, 'r') as f:
+                prj_text = f.read()
+            
+            src_crs = CRS.from_wkt(prj_text)
+            dst_crs = CRS.from_epsg(4326)  # WGS84
+            
+            # 检查是否已经是 WGS84
+            if not src_crs.equals(dst_crs):
+                transformer = Transformer.from_crs(src_crs, dst_crs, always_xy=True)
+                print(f"[Shapefile] Will transform from {src_crs.name} to WGS84")
+            else:
+                print(f"[Shapefile] Already in WGS84, no transformation needed")
+        except ImportError:
+            print(f"[Shapefile] pyproj not available, coordinates may be incorrect")
+        except Exception as e:
+            print(f"[Shapefile] Could not parse PRJ: {e}")
+    
+    # 尝试不同编码打开
+    encodings = ['utf-8', 'gbk', 'gb2312', 'gb18030', 'latin-1']
+    sf = None
+    
+    for encoding in encodings:
+        try:
+            sf = shapefile.Reader(shp_path, encoding=encoding)
+            if len(sf) > 0:
+                _ = sf.shapeRecord(0)
+            break
+        except Exception as e:
+            continue
+    
+    if sf is None:
+        sf = shapefile.Reader(shp_path)
+    
     features = []
     
     for shape_rec in sf.shapeRecords():
         geom = shape_rec.shape.__geo_interface__
+        
+        # 如果需要坐标转换
+        if transformer:
+            geom = transform_geometry(geom, transformer)
+        
         props = dict(zip([f[0] for f in sf.fields[1:]], shape_rec.record))
         
         # 处理编码问题
+        clean_props = {}
         for k, v in props.items():
             if isinstance(v, bytes):
-                try:
-                    props[k] = v.decode('utf-8')
-                except:
+                for enc in ['utf-8', 'gbk', 'gb2312', 'latin-1']:
                     try:
-                        props[k] = v.decode('gbk')
+                        v = v.decode(enc)
+                        break
                     except:
-                        props[k] = str(v)
+                        continue
+                else:
+                    v = str(v)
+            clean_props[k] = v
         
         features.append({
             "type": "Feature",
             "geometry": geom,
-            "properties": props
+            "properties": clean_props
         })
     
     return {
         "type": "FeatureCollection",
         "features": features
     }
+
+
+def transform_geometry(geom: dict, transformer) -> dict:
+    """转换几何坐标"""
+    geom_type = geom.get('type')
+    coords = geom.get('coordinates')
+    
+    if geom_type == 'Point':
+        new_coords = transformer.transform(coords[0], coords[1])
+        return {'type': 'Point', 'coordinates': list(new_coords)}
+    
+    elif geom_type == 'LineString':
+        new_coords = [list(transformer.transform(x, y)) for x, y in coords]
+        return {'type': 'LineString', 'coordinates': new_coords}
+    
+    elif geom_type == 'Polygon':
+        new_coords = []
+        for ring in coords:
+            new_ring = [list(transformer.transform(x, y)) for x, y in ring]
+            new_coords.append(new_ring)
+        return {'type': 'Polygon', 'coordinates': new_coords}
+    
+    elif geom_type == 'MultiPoint':
+        new_coords = [list(transformer.transform(x, y)) for x, y in coords]
+        return {'type': 'MultiPoint', 'coordinates': new_coords}
+    
+    elif geom_type == 'MultiLineString':
+        new_coords = []
+        for line in coords:
+            new_line = [list(transformer.transform(x, y)) for x, y in line]
+            new_coords.append(new_line)
+        return {'type': 'MultiLineString', 'coordinates': new_coords}
+    
+    elif geom_type == 'MultiPolygon':
+        new_coords = []
+        for polygon in coords:
+            new_polygon = []
+            for ring in polygon:
+                new_ring = [list(transformer.transform(x, y)) for x, y in ring]
+                new_polygon.append(new_ring)
+            new_coords.append(new_polygon)
+        return {'type': 'MultiPolygon', 'coordinates': new_coords}
+    
+    return geom
 
 
 def fiona_to_geojson(shp_path: str) -> dict:
@@ -427,3 +519,114 @@ def fiona_to_geojson(shp_path: str) -> dict:
         "type": "FeatureCollection",
         "features": features
     }
+
+
+@router.post("/convert_shapefiles")
+async def convert_shapefiles(files: List[UploadFile] = File(...)):
+    """
+    将多个 Shapefile 组件文件 (.shp, .shx, .dbf, .prj) 转换为 GeoJSON
+    """
+    import os
+    
+    print(f"[Shapefile] Received {len(files)} files")
+    for f in files:
+        print(f"  - {f.filename}")
+    
+    # 检查是否有 .shp 文件
+    shp_files = [f for f in files if f.filename.lower().endswith('.shp')]
+    if not shp_files:
+        raise HTTPException(status_code=400, detail="请选择 .shp 文件")
+    
+    temp_dir = None
+    try:
+        # 创建临时目录
+        temp_dir = tempfile.mkdtemp()
+        print(f"[Shapefile] Temp dir: {temp_dir}")
+        
+        # 保存所有上传的文件，统一文件名前缀
+        shp_basename = os.path.splitext(shp_files[0].filename)[0]
+        
+        for file in files:
+            # 获取扩展名
+            ext = os.path.splitext(file.filename)[1].lower()
+            # 使用统一的基础名 + 小写扩展名
+            new_filename = shp_basename + ext
+            file_path = os.path.join(temp_dir, new_filename)
+            
+            content = await file.read()
+            with open(file_path, 'wb') as f:
+                f.write(content)
+            print(f"[Shapefile] Saved: {new_filename} ({len(content)} bytes)")
+        
+        # 查找 .shp 文件路径
+        shp_path = os.path.join(temp_dir, shp_basename + '.shp')
+        print(f"[Shapefile] SHP path: {shp_path}")
+        
+        # 检查必需的配套文件
+        base_name = os.path.splitext(shp_path)[0]
+        required_exts = ['.shx', '.dbf']
+        missing = []
+        for ext in required_exts:
+            check_path = base_name + ext
+            if not os.path.exists(check_path):
+                missing.append(ext)
+            else:
+                print(f"[Shapefile] Found: {ext}")
+        
+        if missing:
+            # 列出目录内容
+            dir_contents = os.listdir(temp_dir)
+            print(f"[Shapefile] Directory contents: {dir_contents}")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"缺少必需的配套文件: {', '.join(missing)}。请同时选择 .shp, .shx, .dbf 文件"
+            )
+        
+        # 使用 pyshp 读取
+        try:
+            import shapefile
+            print(f"[Shapefile] Using pyshp to read...")
+            geojson = shapefile_to_geojson(shp_path)
+            print(f"[Shapefile] Converted to GeoJSON with {len(geojson.get('features', []))} features")
+            
+            # 调试：打印第一个要素的几何信息
+            if geojson.get('features'):
+                first_geom = geojson['features'][0].get('geometry', {})
+                geom_type = first_geom.get('type')
+                coords = first_geom.get('coordinates')
+                print(f"[Shapefile] First feature geometry type: {geom_type}")
+                if coords:
+                    # 显示坐标结构
+                    if geom_type == 'Polygon':
+                        print(f"[Shapefile] First ring has {len(coords[0])} points")
+                        print(f"[Shapefile] First point: {coords[0][0]}")
+                    elif geom_type == 'MultiPolygon':
+                        print(f"[Shapefile] Has {len(coords)} polygons")
+                        print(f"[Shapefile] First polygon first point: {coords[0][0][0]}")
+                    elif geom_type == 'Point':
+                        print(f"[Shapefile] Point: {coords}")
+        except ImportError:
+            try:
+                import fiona
+                geojson = fiona_to_geojson(shp_path)
+            except ImportError:
+                raise HTTPException(
+                    status_code=500, 
+                    detail="服务器缺少 Shapefile 读取库"
+                )
+        except Exception as e:
+            print(f"[Shapefile] Error reading: {e}")
+            raise
+        
+        return geojson
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Shapefile 转换失败: {str(e)}")
+    finally:
+        # 清理临时文件
+        if temp_dir and os.path.exists(temp_dir):
+            shutil.rmtree(temp_dir, ignore_errors=True)

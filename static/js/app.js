@@ -62,12 +62,88 @@ function extractPolygonFromGeoJSON(geojson) {
 
 // ============ 初始化 ============
 document.addEventListener('DOMContentLoaded', function() {
+    initTianDiTuToken(); // 加载保存的Token
     initMap(); // This will now be async-like internally
     initDrawControls();
     initEventListeners();
     initSidebarToggle();
     loadProvinces();
 });
+
+// ============ 天地图Token管理 ============
+function initTianDiTuToken() {
+    const savedToken = localStorage.getItem('tianditu_token');
+    const tokenInput = document.getElementById('tianditu-token-input');
+    const tokenStatus = document.getElementById('token-status');
+    
+    if (savedToken) {
+        tokenInput.value = savedToken;
+        tokenStatus.textContent = '✅ 已加载保存的Token';
+        tokenStatus.style.color = '#28a745';
+    }
+}
+
+function getTianDiTuToken() {
+    return localStorage.getItem('tianditu_token') || '';
+}
+
+function saveTianDiTuToken() {
+    const tokenInput = document.getElementById('tianditu-token-input');
+    const tokenStatus = document.getElementById('token-status');
+    const token = tokenInput.value.trim();
+    
+    if (!token) {
+        tokenStatus.textContent = '⚠️ 请输入Token';
+        tokenStatus.style.color = '#dc3545';
+        return;
+    }
+    
+    localStorage.setItem('tianditu_token', token);
+    tokenStatus.textContent = '✅ Token已保存';
+    tokenStatus.style.color = '#28a745';
+    
+    // 重新加载地图图层以使用新Token
+    refreshMapLayers();
+}
+
+function clearTianDiTuToken() {
+    const tokenInput = document.getElementById('tianditu-token-input');
+    const tokenStatus = document.getElementById('token-status');
+    
+    localStorage.removeItem('tianditu_token');
+    tokenInput.value = '';
+    tokenStatus.textContent = '已清除，将使用默认Token';
+    tokenStatus.style.color = '#666';
+    
+    // 重新加载地图图层以使用默认Token
+    refreshMapLayers();
+}
+
+async function refreshMapLayers() {
+    // 获取当前激活的图层
+    let activeLayerKey = null;
+    for (const [key, layer] of Object.entries(mapLayers)) {
+        if (map.hasLayer(layer)) {
+            activeLayerKey = key;
+            map.removeLayer(layer);
+        }
+    }
+    
+    // 移除旧的图层控制器
+    map.eachLayer(layer => {
+        if (layer._url) {
+            // 不移除drawnItems等特殊图层
+        }
+    });
+    
+    // 重新加载图源
+    await loadMapSources();
+    
+    // 恢复之前激活的图层
+    if (activeLayerKey && mapLayers[activeLayerKey]) {
+        mapLayers[activeLayerKey].addTo(map);
+    }
+}
 
 // ============ 地图初始化 ============
 async function initMap() {
@@ -83,9 +159,17 @@ async function initMap() {
     drawnItems = new L.FeatureGroup();
     map.addLayer(drawnItems);
     
+    // 加载图源
+    await loadMapSources();
+}
+
+async function loadMapSources() {
     // 获取并加载所有图源
     try {
-        const response = await fetch('/api/sources');
+        // 传递自定义Token
+        const customToken = getTianDiTuToken();
+        const url = customToken ? `/api/sources?tianditu_token=${encodeURIComponent(customToken)}` : '/api/sources';
+        const response = await fetch(url);
         const sources = await response.json();
         
         const baseMaps = {};
@@ -306,6 +390,17 @@ function initEventListeners() {
     });
     document.getElementById('vector-file-input').addEventListener('change', loadVectorFile);
     document.getElementById('clear-vector-btn').addEventListener('click', clearVectorLayers);
+    
+    // 天地图Token按钮
+    document.getElementById('save-token-btn').addEventListener('click', saveTianDiTuToken);
+    document.getElementById('clear-token-btn').addEventListener('click', clearTianDiTuToken);
+    
+    // 上传边界按钮
+    document.getElementById('upload-boundary-btn').addEventListener('click', () => {
+        document.getElementById('boundary-file-input').click();
+    });
+    document.getElementById('boundary-file-input').addEventListener('change', loadBoundaryFile);
+    document.getElementById('clear-boundary-btn').addEventListener('click', clearBoundary);
 }
 
 // ============ 地名搜索 ============
@@ -677,6 +772,9 @@ async function startDownload() {
         const useProxy = document.getElementById('proxy-checkbox').checked;
         const proxyUrl = document.getElementById('proxy-input').value.trim();
         
+        // 获取天地图Token
+        const tiandituToken = getTianDiTuToken();
+        
         const requestBody = {
             bounds: currentBounds,
             polygon: currentPolygon,
@@ -684,7 +782,8 @@ async function startDownload() {
             source: document.getElementById('source-select').value,
             format: format,
             crop_to_shape: document.getElementById('crop-checkbox').checked,
-            proxy: useProxy && proxyUrl ? proxyUrl : null
+            proxy: useProxy && proxyUrl ? proxyUrl : null,
+            tianditu_token: tiandituToken || null
         };
         
         // 第一步：创建下载任务
@@ -1147,12 +1246,184 @@ function clearVectorLayers() {
     document.getElementById('vector-status').textContent = '已清除所有矢量图层';
 }
 
+// ============ 上传自定义边界 ============
+
+// 存储上传的边界图层
+let uploadedBoundaryLayer = null;
+
+async function loadBoundaryFile(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    
+    const statusEl = document.getElementById('boundary-status');
+    statusEl.textContent = '⬇️ 正在加载边界文件...';
+    statusEl.style.color = '#666';
+    
+    try {
+        // 检查是否是 Shapefile 组合
+        const fileArray = Array.from(files);
+        const shpFile = fileArray.find(f => f.name.toLowerCase().endsWith('.shp'));
+        const geojsonFile = fileArray.find(f => f.name.toLowerCase().endsWith('.geojson') || f.name.toLowerCase().endsWith('.json'));
+        
+        let geojson;
+        let filename;
+        
+        if (shpFile) {
+            // Shapefile - 需要后端处理
+            statusEl.textContent = '⚙️ 正在转换 Shapefile...';
+            geojson = await convertShapefilesToGeoJSON(fileArray);
+            filename = shpFile.name;
+        } else if (geojsonFile) {
+            // 直接读取 GeoJSON
+            const text = await geojsonFile.text();
+            geojson = JSON.parse(text);
+            filename = geojsonFile.name;
+        } else {
+            throw new Error('请选择 .geojson 或 .shp 文件 (需同时选择 .shx, .dbf)');
+        }
+        
+        if (geojson) {
+            setBoundaryFromGeoJSON(geojson, filename);
+        }
+    } catch (error) {
+        console.error('Failed to load boundary file:', error);
+        statusEl.textContent = `❌ 加载失败: ${error.message}`;
+        statusEl.style.color = '#dc3545';
+    }
+    
+    // 清空文件输入
+    event.target.value = '';
+}
+
+function setBoundaryFromGeoJSON(geojson, filename) {
+    const statusEl = document.getElementById('boundary-status');
+    
+    console.log('Loading boundary from GeoJSON:', geojson);
+    
+    // 清除之前的边界和绘制
+    clearBoundary(false);
+    
+    // 直接使用 Leaflet 的 GeoJSON 图层来显示
+    // 这样可以支持更多类型的几何图形
+    uploadedBoundaryLayer = L.geoJSON(geojson, {
+        style: {
+            color: '#e74c3c',
+            fillColor: '#e74c3c',
+            fillOpacity: 0.2,
+            weight: 2,
+            dashArray: '5, 5'
+        }
+    }).addTo(map);
+    
+    // 检查是否成功加载
+    const bounds = uploadedBoundaryLayer.getBounds();
+    if (!bounds.isValid()) {
+        map.removeLayer(uploadedBoundaryLayer);
+        uploadedBoundaryLayer = null;
+        throw new Error('无法从文件中提取有效的边界');
+    }
+    
+    // 设置当前边界框
+    currentBounds = {
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest()
+    };
+    
+    // 尝试提取多边形用于裁剪
+    const polygon = extractPolygonFromGeoJSON(geojson);
+    if (polygon && polygon.length >= 3) {
+        currentPolygon = polygon;
+        console.log('Extracted polygon with', polygon.length, 'points');
+    } else {
+        // 如果无法提取多边形，使用边界框
+        currentPolygon = null;
+        console.log('Could not extract polygon, using bounds only');
+    }
+    
+    // 绑定弹窗
+    uploadedBoundaryLayer.bindPopup(`<b>上传的边界</b><br>${filename || '未命名'}`);
+    
+    // 缩放到边界范围
+    map.fitBounds(bounds);
+    
+    // 更新界面
+    updateSelectionInfo();
+    estimateDownload();
+    updateVectorButtons();
+    
+    // 如果有多边形，自动勾选“按边界裁剪”
+    if (currentPolygon) {
+        document.getElementById('crop-checkbox').checked = true;
+    }
+    
+    statusEl.textContent = `✅ 已加载: ${filename || '边界文件'}`;
+    statusEl.style.color = '#28a745';
+}
+
+function clearBoundary(showStatus = true) {
+    // 清除上传的边界图层
+    if (uploadedBoundaryLayer) {
+        map.removeLayer(uploadedBoundaryLayer);
+        uploadedBoundaryLayer = null;
+    }
+    
+    // 清除绘制的图形
+    if (drawnItems) {
+        drawnItems.clearLayers();
+    }
+    
+    // 清除行政边界
+    if (boundaryLayer) {
+        map.removeLayer(boundaryLayer);
+        boundaryLayer = null;
+    }
+    
+    // 重置状态
+    currentBounds = null;
+    currentPolygon = null;
+    
+    // 更新界面
+    updateSelectionInfo();
+    document.getElementById('download-btn').disabled = true;
+    document.getElementById('estimate-info').innerHTML = '';
+    updateVectorButtons();
+    
+    if (showStatus) {
+        const statusEl = document.getElementById('boundary-status');
+        statusEl.textContent = '已清除边界';
+        statusEl.style.color = '#666';
+    }
+}
+
 async function convertShapefileToGeoJSON(file) {
-    // 发送到后端转换
+    // 发送到后端转换 (ZIP文件)
     const formData = new FormData();
     formData.append('file', file);
     
     const response = await fetch('/api/vector/convert_shapefile', {
+        method: 'POST',
+        body: formData
+    });
+    
+    if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Shapefile 转换失败');
+    }
+    
+    return await response.json();
+}
+
+async function convertShapefilesToGeoJSON(files) {
+    // 发送多个 Shapefile 组件到后端转换
+    const formData = new FormData();
+    
+    for (const file of files) {
+        formData.append('files', file);
+    }
+    
+    const response = await fetch('/api/vector/convert_shapefiles', {
         method: 'POST',
         body: formData
     });

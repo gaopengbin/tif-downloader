@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 import aiohttp
 from PIL import Image
 
-from ..config import TILE_SOURCES, DOWNLOAD_SETTINGS, USER_AGENTS, TILE_SIZE, HTTP_PROXY
+from ..config import TILE_SOURCES, DOWNLOAD_SETTINGS, USER_AGENTS, TILE_SIZE, HTTP_PROXY, TIANDITU_DEFAULT_TOKEN
 from .tile import TileCoord
 
 
@@ -50,7 +50,8 @@ class TileDownloader:
         retry_times: int = None,
         timeout: int = None,
         delay: float = None,
-        proxy: str = None
+        proxy: str = None,
+        tianditu_token: str = None
     ):
         """
         Initialize the downloader.
@@ -62,6 +63,7 @@ class TileDownloader:
             timeout: Request timeout in seconds
             delay: Delay between requests in seconds
             proxy: HTTP proxy URL (optional, uses config default if not provided)
+            tianditu_token: Custom Tianditu API token
         """
         if source not in TILE_SOURCES:
             raise ValueError(f"Unknown tile source: {source}. Available: {list(TILE_SOURCES.keys())}")
@@ -73,6 +75,7 @@ class TileDownloader:
         self.timeout = timeout or DOWNLOAD_SETTINGS["timeout"]
         self.delay = delay or DOWNLOAD_SETTINGS["delay"]
         self.proxy = proxy  # Use provided proxy or None
+        self.tianditu_token = tianditu_token  # Custom Tianditu token
         
         self._semaphore: Optional[asyncio.Semaphore] = None
         self._session: Optional[aiohttp.ClientSession] = None
@@ -93,6 +96,10 @@ class TileDownloader:
         url = url.replace("{x}", str(tile.x))
         url = url.replace("{y}", str(tile.y))
         url = url.replace("{z}", str(tile.z))
+        
+        # Replace Tianditu token if custom token provided
+        if self.tianditu_token and "tianditu" in self.source:
+            url = url.replace(TIANDITU_DEFAULT_TOKEN, self.tianditu_token)
         
         return url
     

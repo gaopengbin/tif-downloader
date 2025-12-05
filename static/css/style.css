@@ -182,6 +182,40 @@ body {
     gap: 4px;
 }
 
+/* Section Groups */
+.section-group {
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-md);
+    padding: 8px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(9, 30, 66, 0.08);
+}
+
+.section-group:last-child {
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid var(--primary-light);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Adjust panel spacing inside groups */
+.section-group .panel {
+    margin-bottom: 8px;
+}
+
+.section-group .panel:last-child {
+    margin-bottom: 0;
+}
+
 /* Form elements */
 .form-group {
     margin-bottom: 8px;

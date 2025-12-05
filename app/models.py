@@ -27,6 +27,7 @@ class DownloadRequest(BaseModel):
     format: str = Field("geotiff", description="输出格式")
     crop_to_shape: bool = Field(False, description="是否按多边形裁剪")
     proxy: Optional[str] = Field(None, description="代理地址")
+    tianditu_token: Optional[str] = Field(None, description="天地图自定义Token")
     
     class Config:
         json_schema_extra = {

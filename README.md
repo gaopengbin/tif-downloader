@@ -11,15 +11,19 @@
 
 ### 🗺️ 地图瓦片下载
 - **多图源支持**：Google Maps/Satellite, OpenStreetMap, 天地图 (矢量/影像), ArcGIS, Carto 等
+- **自定义 Token**：支持配置和保存自定义的天地图 API Token
 - **高精度拼接**：自动下载指定区域瓦片并无缝拼接
 - **多种格式**：导出带有地理坐标信息的 **GeoTIFF**，或普通 **PNG/JPEG** 图像
-- **按边界裁剪**：支持按行政区划或自定义多边形裁剪，生成透明背景图像
+- **按边界裁剪**：支持按行政区划、自定义多边形绘制或**上传 SHP/GeoJSON** 边界裁剪
 - **大图支持**：优化的内存管理，支持下载百万级瓦片
 
 ### 📍 矢量数据工具
-- **OSM 下载**：支持下载选定区域的 OpenStreetMap 矢量数据（道路、建筑、水系、POI 等）
+- **OSM 下载**：下载选定区域的 OpenStreetMap 矢量数据（道路、建筑、水系、POI 等）
 - **行政区划**：自动获取中国省/市/区县的 GeoJSON 边界数据
-- **本地加载**：支持加载查看本地 GeoJSON 和 Shapefile (zip) 文件
+- **自定义边界**：
+  - 支持上传 **GeoJSON** (.json/.geojson)
+  - 支持上传 **Shapefile** (.shp + .shx + .dbf，支持投影坐标自动转 WGS84)
+  - 边界可直接用于地图裁剪区域
 - **格式转换**：内置 Shapefile 转 GeoJSON 工具
 
 ### 🖥️ 桌面端体验
@@ -79,13 +83,13 @@ build_desktop.bat
 
 ## 🛠️ 技术栈
 
-- **后端**：FastAPI, Uvicorn, Rasterio (GDAL), PIL (Pillow), PyShp
+- **后端**：FastAPI, Uvicorn, Rasterio (GDAL), PIL (Pillow), PyShp, Fiona, PyProj
 - **前端**：HTML5, CSS3 (GeoAI Pro Theme), JavaScript, Leaflet.js, Leaflet.Draw
 - **桌面封装**：PyWebView, PyInstaller
 
 ## 📝 注意事项
 
-- **天地图 Key**：本项目内置了测试用 Key，建议在 `app/config.py` 中替换为您自己的天地图 Key。
+- **天地图 Key**：内置了测试 Key，建议在界面中输入您自己的 Token 并点击保存（会自动持久化存储）。
 - **网络代理**：访问 Google 等国外图源时，请在界面勾选"启用代理"并配置正确的代理地址 (默认 http://127.0.0.1:10808)。
 - **版权声明**：下载的地图数据版权归原图商所有，请遵守相关使用条款。
 
