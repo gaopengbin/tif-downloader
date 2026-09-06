@@ -28,6 +28,8 @@ GeoD is listed in the community-maintained [OSM Apps Catalog](https://osm-apps.o
 
 GeoD does not bundle map data or grant rights to third-party services. You are responsible for choosing a source that permits your intended access, download, storage, and redistribution. See the [terms and disclaimer](https://geodownloader.pages.dev/disclaimer.html).
 
+> **Open to work in Beijing:** The author is seeking AI application, agent engineering, and full-stack roles. Hiring enquiries and referrals are welcome. [Resume (Chinese PDF)](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf) · [Portfolio](https://github.com/gaopengbin) · [Email](mailto:1804287165@qq.com)
+
 ## Download
 
 Download the latest stable release from [GitHub Releases](https://github.com/gaopengbin/geo-downloader/releases/latest).

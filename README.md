@@ -40,6 +40,8 @@ GeoD 已收录于社区维护的 [OSM Apps Catalog](https://osm-apps.org/?app=13
 
 ---
 
+> **作者求职 · 北京**：正在寻找 AI 应用开发 / Agent / 全栈岗位，欢迎招聘与内推。[简历 PDF](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf) · [项目与个人介绍](https://github.com/gaopengbin) · [邮件联系](mailto:1804287165@qq.com)
+
 ## 下载安装
 
 前往 [Latest Release](https://github.com/gaopengbin/geo-downloader/releases/latest) 下载最新稳定版。GeoD 免费提供 Windows、macOS 和 Linux 安装包：
