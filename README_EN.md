@@ -1,13 +1,13 @@
 > [!IMPORTANT]
-> ## 📣 Author open to work · Beijing
+> ## 📣 作者正在求职 · 北京
 >
-> **AI Application Development · Agent Engineering · Full-Stack Development**
+> **AI 应用开发 · Agent 应用开发 · AI 产品全栈**
 >
-> I'm Pengbin Gao, a software developer with about 6 years of experience. Hiring enquiries, referrals, and sharing are welcome!
+> 我是高鹏彬，有约 6 年软件开发经验。如果你们团队正在招人，欢迎联系，也感谢帮忙内推或转发！
 >
-> ### [📄 Resume (Chinese PDF)](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf)　·　[✉️ Contact me](mailto:1804287165@qq.com)
+> ### [📄 查看简历 PDF](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf)　·　[✉️ 联系我](mailto:1804287165@qq.com)
 >
-> [Explore my projects →](https://github.com/gaopengbin) · Email: **1804287165@qq.com**
+> [查看我的项目与个人介绍 →](https://github.com/gaopengbin) · 邮箱：**1804287165@qq.com**
 
 <h1 align="center">
   <img width="2172" height="724" alt="GeoD" src="https://github.com/user-attachments/assets/107849ff-eb30-425a-91d8-b93b9048dae7" />
