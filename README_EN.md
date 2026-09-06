@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> ## 📣 Author open to work · Beijing
+>
+> **AI Application Development · Agent Engineering · Full-Stack Development**
+>
+> I'm Pengbin Gao, a software developer with about 6 years of experience. Hiring enquiries, referrals, and sharing are welcome!
+>
+> ### [📄 Resume (Chinese PDF)](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf)　·　[✉️ Contact me](mailto:1804287165@qq.com)
+>
+> [Explore my projects →](https://github.com/gaopengbin) · Email: **1804287165@qq.com**
+
 <h1 align="center">
   <img width="2172" height="724" alt="GeoD" src="https://github.com/user-attachments/assets/107849ff-eb30-425a-91d8-b93b9048dae7" />
 </h1>
@@ -27,8 +38,6 @@ GeoD is a free and open-source desktop application for browsing and exporting ge
 GeoD is listed in the community-maintained [OSM Apps Catalog](https://osm-apps.org/?app=1308821580&page=app). This listing does not imply endorsement by the OpenStreetMap Foundation.
 
 GeoD does not bundle map data or grant rights to third-party services. You are responsible for choosing a source that permits your intended access, download, storage, and redistribution. See the [terms and disclaimer](https://geodownloader.pages.dev/disclaimer.html).
-
-> **Open to work in Beijing:** The author is seeking AI application, agent engineering, and full-stack roles. Hiring enquiries and referrals are welcome. [Resume (Chinese PDF)](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf) · [Portfolio](https://github.com/gaopengbin) · [Email](mailto:1804287165@qq.com)
 
 ## Download
 

@@ -1,3 +1,14 @@
+> [!IMPORTANT]
+> ## 📣 作者正在求职 · 北京
+>
+> **AI 应用开发 · Agent 应用开发 · AI 产品全栈**
+>
+> 我是高鹏彬，有约 6 年软件开发经验。如果你们团队正在招人，欢迎联系，也感谢帮忙内推或转发！
+>
+> ### [📄 查看简历 PDF](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf)　·　[✉️ 联系我](mailto:1804287165@qq.com)
+>
+> [查看我的项目与个人介绍 →](https://github.com/gaopengbin) · 邮箱：**1804287165@qq.com**
+
 <h1 align="center">
 <img width="2172" height="724" alt="ChatGPT Image 2026年6月9日 21_38_21" src="https://github.com/user-attachments/assets/107849ff-eb30-425a-91d8-b93b9048dae7" />
 
@@ -39,8 +50,6 @@ GeoD 已收录于社区维护的 [OSM Apps Catalog](https://osm-apps.org/?app=13
 > **使用提示**：本工具是基于开源协议发布的桌面客户端，**不内置任何地图数据**。所有数据来自使用者自行配置的第三方服务，**请自行获取合法授权并遵守相关条款与法规**。下载所得数据版权归原数据方所有。详见 [使用条款与免责声明](https://geodownloader.pages.dev/disclaimer.html)。
 
 ---
-
-> **作者求职 · 北京**：正在寻找 AI 应用开发 / Agent / 全栈岗位，欢迎招聘与内推。[简历 PDF](https://laogao.xyz/platform-api/public/resume/gaopengbin-ai-20260906.pdf) · [项目与个人介绍](https://github.com/gaopengbin) · [邮件联系](mailto:1804287165@qq.com)
 
 ## 下载安装
 
