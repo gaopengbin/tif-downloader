@@ -1,0 +1,40 @@
+name: Build Tencent GeoD Mirror
+
+on:
+  push:
+    branches: [deploy/geod-tencent-mirror]
+    paths: ['website/**', '.github/workflows/build-tencent-mirror.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: website/yarn.lock
+      - run: yarn install --frozen-lockfile
+        working-directory: website
+      - run: yarn build
+        working-directory: website
+      - name: Check export
+        run: |
+          test -s website/out/index.html
+          test -s website/out/history.html
+          test -s website/out/disclaimer.html
+          grep -q 'beian.miit.gov.cn' website/out/index.html
+          printf '%s\n' "$GITHUB_SHA" > website/out/release.txt
+          tar -czf geod-website.tar.gz -C website/out .
+          sha256sum geod-website.tar.gz > geod-website.tar.gz.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: geod-website
+          path: |
+            geod-website.tar.gz
+            geod-website.tar.gz.sha256
+          retention-days: 30

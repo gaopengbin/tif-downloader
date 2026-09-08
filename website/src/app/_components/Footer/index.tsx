@@ -100,6 +100,10 @@ const Footer: React.FC<FooterProps> = ({ className, ...rest }) => {
         <section className={styles.footerSectionSocial}>
           <p className={styles.footerSectionSocialCopy}>
             © {new Date().getFullYear()} GeoD / GeoDownloader
+            {" · "}
+            <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+              豫ICP备2024091391号-1
+            </a>
           </p>
           <a
             href={urls.getGithubUrl()}
